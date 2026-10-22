@@ -52,6 +52,7 @@ body {
   background: #18201f;
 }
 .hero-slideshow > header {
+  z-index: 2;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -296,6 +297,47 @@ body {
   animation: rise 0.35s ease both;
 }
 
+.home-orbit-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 40%);
+}
+.home-story-orbit {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 30%);
+}
+.home-story-paws {
+  display: inline-flex;
+  gap: 0.1em;
+  margin-left: 0.2em;
+  vertical-align: middle;
+  color: #fff;
+}
+.home-story-paws svg {
+  width: 0.48em;
+  height: 0.48em;
+  opacity: 0;
+}
+.home-story-paws.is-visible svg {
+  animation: home-paw-arrive 450ms ease-out both;
+}
+.home-story-paws svg:first-child { rotate: -18deg; }
+.home-story-paws svg:last-child {
+  rotate: 18deg;
+  translate: 0 -0.12em;
+}
+.home-story-paws.is-visible svg:last-child {
+  animation-delay: 300ms;
+}
+@keyframes home-paw-arrive {
+  from { opacity: 0; transform: translateY(8px) scale(0.5); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @keyframes home-cta-fade {
   from {
     opacity: 0;
@@ -327,6 +369,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .home-story-paws.is-visible svg { animation: none; opacity: 1; }
   .rise,
   .pop {
     animation: none;
