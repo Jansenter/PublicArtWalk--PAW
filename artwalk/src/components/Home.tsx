@@ -103,23 +103,42 @@ export default function Home() {
           return { clone, bounds, wordIndex, width: bounds.width };
         });
       });
+      // Reveal the paws in sequence on a separate orbit around the words.
+      const paws = Array.from(headline.querySelectorAll<SVGSVGElement>('.home-story-paws svg')).map((paw, index) => {
+        const bounds = paw.getBoundingClientRect();
+        const clone = paw.cloneNode(true) as SVGSVGElement;
+        clone.removeAttribute('class');
+        Object.assign(clone.style, {
+          position: 'absolute', left: '0', top: '0', color: '#fff',
+          width: `${bounds.width}px`, height: `${bounds.height}px`,
+          opacity: '0', transformOrigin: 'center',
+        });
+        layer.appendChild(clone);
+        return { clone, bounds, wordIndex: words.length + index * 3, width: bounds.width, paw: true };
+      });
+      const orbitItems = [...letters.map((letter) => ({ ...letter, paw: false })), ...paws];
       const totalWidth = letters.reduce((sum, letter) => sum + letter.width, 0);
       const gap = totalWidth * 0.045;
-      const scale = Math.min(0.85, Math.PI * 2 * radius / (totalWidth + gap * words.length));
+      const scale = Math.min(1.65, Math.PI * 2 * radius / (totalWidth + gap * words.length));
       const circumference = totalWidth + gap * words.length;
       let distance = 0;
       let previousWord = 0;
-      const positioned = letters.map((letter) => {
+      const positioned = orbitItems.map((letter) => {
         if (letter.wordIndex !== previousWord) distance += gap;
         previousWord = letter.wordIndex;
-        const angle = -Math.PI / 2 + (distance + letter.width / 2) / circumference * Math.PI * 2;
+        const pawIndex = (letter.wordIndex - words.length) / 3;
+        // Stagger the paws above and below the words.
+        const pawAngles = [-2.3, 2.25];
+        const angle = letter.paw
+          ? pawAngles[pawIndex] + (Math.random() - 0.5) * 0.22
+          : -Math.PI / 2 + (distance + letter.width / 2) / circumference * Math.PI * 2;
         distance += letter.width;
-        return { ...letter, angle };
+        return { ...letter, angle, radialOffset: letter.paw ? [48, -42][pawIndex] + Math.random() * 12 : 0 };
       });
       const started = performance.now();
       const stagger = 320;
       const entrance = 2600;
-      const assembledAt = entrance + (words.length - 1) * stagger;
+      const assembledAt = entrance + (words.length + 3) * stagger;
       const orbitDuration = 12000;
       const returnAt = assembledAt + orbitDuration;
       const finishAt = returnAt + assembledAt;
@@ -130,15 +149,21 @@ export default function Home() {
         const elapsed = now - started;
         const rotation = -ease(clamp((elapsed - assembledAt) / orbitDuration)) * Math.PI * 2;
         words.forEach((word) => { word.style.visibility = 'hidden'; });
-        positioned.forEach(({ clone, bounds, wordIndex, angle }) => {
+        positioned.forEach(({ clone, bounds, wordIndex, angle, paw, radialOffset }) => {
           const arrival = ease(clamp((elapsed - wordIndex * stagger) / entrance));
           const departure = ease(clamp((elapsed - returnAt - wordIndex * stagger) / entrance));
           const blend = arrival * (1 - departure);
+          clone.style.opacity = String(paw
+            ? ease(clamp((elapsed - wordIndex * stagger) / 900))
+            : 1 - 0.45 * blend);
+          const orbitRadius = paw
+            ? Math.min(radius + radialOffset, Math.min(window.innerWidth, window.innerHeight) / 2 - 24)
+            : radius;
           const theta = angle + rotation;
           const originX = bounds.left + bounds.width / 2;
           const originY = bounds.top + bounds.height / 2;
-          const x = originX + (centerX + Math.cos(theta) * radius - originX) * blend;
-          const y = originY + (centerY + Math.sin(theta) * radius - originY) * blend;
+          const x = originX + (centerX + Math.cos(theta) * orbitRadius - originX) * blend;
+          const y = originY + (centerY + Math.sin(theta) * orbitRadius - originY) * blend;
           // Keep the completed revolution constant during the return to avoid an extra spin.
           const tilt = (angle + Math.PI / 2) * blend + rotation;
           clone.style.transform = `translate(${x - bounds.width / 2}px, ${y - bounds.height / 2}px) rotate(${tilt}rad) scale(${1 + (scale - 1) * blend})`;

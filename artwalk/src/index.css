@@ -323,19 +323,12 @@ body {
   opacity: 0;
 }
 .home-story-paws.is-visible svg {
-  animation: home-paw-arrive 450ms ease-out both;
+  opacity: 1;
 }
 .home-story-paws svg:first-child { rotate: -18deg; }
 .home-story-paws svg:last-child {
   rotate: 18deg;
   translate: 0 -0.12em;
-}
-.home-story-paws.is-visible svg:last-child {
-  animation-delay: 300ms;
-}
-@keyframes home-paw-arrive {
-  from { opacity: 0; transform: translateY(8px) scale(0.5); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes home-cta-fade {
