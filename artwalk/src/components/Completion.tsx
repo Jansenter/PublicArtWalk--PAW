@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TOURS, type Tour } from '../data/tours';
 import { formatDistance } from '../lib/geo';
-import { navigate } from '../lib/router';
+import { href, navigate } from '../lib/router';
 import { useLanguage } from '../lib/language';
 
 export default function Completion({
@@ -22,6 +22,16 @@ export default function Completion({
   const { t, language } = useLanguage();
   const other = TOURS.find((t) => t.id !== tour.id);
   const [copied, setCopied] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const shareUrl = new URL(href({ view: 'tour', tourId: tour.id }), window.location.href).href;
+  const shareText = `I just completed “${tour.title}” on Public ArtWalk - Paw — ${stops} public artworks across ${formatDistance(metres)} of Downtown Vancouver. 🎨`;
+  const socialLinks = [
+    { name: 'WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}` },
+    { name: 'Facebook', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
+    { name: 'X', url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
+    { name: 'Instagram', url: 'https://www.instagram.com/' },
+  ];
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -31,22 +41,30 @@ export default function Completion({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const share = async () => {
-    const text = `I just completed “${tour.title}” on Public ArtWalk - Paw — ${stops} public artworks across ${formatDistance(metres)} of Downtown Vancouver. 🎨`;
+  const copyLink = async () => {
+    setShareError('');
     try {
-      if (navigator.share) await navigator.share({ title: 'Public ArtWalk - Paw', text, url: location.origin });
-      else {
-        await navigator.clipboard.writeText(`${text} ${location.origin}`);
-        setCopied(true);
-      }
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
     } catch {
-      /* user cancelled */
+      setShareError(language === 'zh' ? '无法复制，请手动复制下方链接。' : language === 'fr' ? 'Copie impossible. Copiez le lien ci-dessous.' : 'Couldn’t copy. Please copy the link below.');
+    }
+  };
+
+  const share = async () => {
+    setShareError('');
+    try {
+      await navigator.share({ title: 'Public ArtWalk - Paw', text: shareText, url: shareUrl });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setShareError(language === 'zh' ? '请使用下方分享选项。' : language === 'fr' ? 'Utilisez les options ci-dessous.' : 'Please use one of the sharing options below.');
+      }
     }
   };
 
   return (
     <div className="fixed inset-0 z-[1300] grid place-items-center bg-ink/55 p-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="done-title">
-      <div className="pop w-full max-w-sm overflow-hidden rounded-3xl bg-card shadow-2xl">
+      <div className="pop w-full max-h-[90dvh] max-w-sm overflow-y-auto rounded-3xl bg-card shadow-2xl">
         <div className="relative grid place-items-center px-6 pb-6 pt-8 text-white" style={{ background: tour.accent }}>
           <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden>
             <circle cx="48" cy="48" r="44" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="3" strokeDasharray="4 6" />
@@ -65,9 +83,35 @@ export default function Completion({
         </div>
         <div className="space-y-2 p-5">
           <p className="pb-2 text-center text-sm text-ink-2">You’ve discovered the stories hidden in your city. Thanks for looking closer.</p>
-          <button onClick={share} className="h-12 w-full rounded-full bg-ink font-semibold text-paper">
-            {copied ? (language === 'zh' ? '已复制 ✓' : language === 'fr' ? 'Copié ✓' : 'Copied to clipboard ✓') : t('Share your walk')}
+          <button onClick={() => setShowShare(!showShare)} aria-expanded={showShare} aria-controls="walk-share-options" className="h-12 w-full rounded-full bg-ink font-semibold text-paper">
+            {t('Share your walk')}
           </button>
+          {showShare && (
+            <div id="walk-share-options" className="space-y-2 rounded-2xl border border-line p-3">
+              <div className="grid grid-cols-2 gap-2">
+                {socialLinks.map(({ name, url }) => (
+                  <a key={name} href={url} onClick={name === 'Instagram' ? () => { void copyLink(); } : undefined} target="_blank" rel="noopener noreferrer" aria-label={`${t('Share your walk')} — ${name}`} className="grid min-h-11 place-items-center rounded-full border border-line px-3 text-sm font-semibold">
+                    {name}
+                  </a>
+                ))}
+              </div>
+              <p className="text-center text-xs text-ink-2">
+                {language === 'zh' ? 'Instagram：复制链接后打开应用，请粘贴分享。' : language === 'fr' ? 'Instagram : le lien est copié. Collez-le pour le partager.' : 'Instagram copies the link and opens Instagram. Paste the link to share.'}
+              </p>
+              <button onClick={copyLink} className="min-h-11 w-full rounded-full border border-line text-sm font-semibold">
+                {copied ? (language === 'zh' ? '已复制 ✓' : language === 'fr' ? 'Lien copié ✓' : 'Link copied ✓') : (language === 'zh' ? '复制链接' : language === 'fr' ? 'Copier le lien' : 'Copy link')}
+              </button>
+              {typeof navigator.share === 'function' && (
+                <button onClick={share} className="min-h-11 w-full rounded-full border border-line text-sm font-semibold">
+                  {language === 'zh' ? '更多应用…' : language === 'fr' ? 'Autres applications…' : 'More apps…'}
+                </button>
+              )}
+              <p role="status" className="text-center text-xs text-ink-2">
+                {shareError || (copied ? (language === 'zh' ? '链接已复制到剪贴板。' : language === 'fr' ? 'Lien copié dans le presse-papiers.' : 'Link copied to clipboard.') : '')}
+              </p>
+              {shareError && <input aria-label="Walk link" readOnly value={shareUrl} onFocus={(event) => event.currentTarget.select()} className="w-full rounded-lg border border-line bg-card p-2 text-xs" />}
+            </div>
+          )}
           {other && (
             <button
               onClick={() => {

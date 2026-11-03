@@ -3,6 +3,7 @@ import ExploreView from './components/ExploreView';
 import Home from './components/Home';
 import TourView from './components/TourView';
 import CommunityHub from './components/CommunityHub';
+import { ProfileButton } from './components/Shell';
 import { tourById } from './data/tours';
 import { href, useRoute } from './lib/router';
 import { personalTour, usePersonalWalks } from './lib/profile';
@@ -21,7 +22,7 @@ export default function App() {
   if (route.view === 'profile') {
     content = (
       <main className="mx-auto max-w-5xl px-5 py-8">
-        <a className="font-semibold underline" href={href({ view: 'home' })}>← Home</a>
+        <div className="flex items-center justify-between gap-3"><a className="font-semibold underline" href={href({ view: 'home' })}>← Home</a><ProfileButton /></div>
         <h1 className="mt-6 font-display text-3xl font-semibold">My ArtWalk</h1>
         <CommunityHub />
       </main>

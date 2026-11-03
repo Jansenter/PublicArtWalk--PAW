@@ -4,7 +4,7 @@ import { ARTWORK_TAGS, artworkTagEvidence } from '../lib/artwork-tags';
 import { artistsFor, artistCredit, type Artwork } from '../lib/data';
 import { distance, formatDistance, osmDirections, walkMinutes, type LatLon } from '../lib/geo';
 import { speechSupported, toChunks, useNarration } from '../lib/speech';
-import ArtCover from './ArtCover';
+import ArtworkGallery from './ArtworkGallery';
 import ArtworkSocial from './ArtworkSocial';
 import ArtworkComments from './ArtworkComments';
 import NearbyPlaces from './NearbyPlaces';
@@ -115,16 +115,7 @@ export default function StoryPanel({ art, tour, stop, index, total, prev, next, 
 
       <div className="flex-1 overflow-y-auto overscroll-contain">
         <div className="relative">
-          {art.id === 755 ? (
-            <div
-              className="parallax-photo h-44 sm:h-52"
-              role="img"
-              aria-label="Chrome steel ring sculptures of A Parallax View outside Waterfront Station."
-              style={{ backgroundImage: `linear-gradient(to top, rgb(28 26 23 / 0.24), transparent 55%), url('${import.meta.env.BASE_URL}images/caption.jpg')` }}
-            />
-          ) : (
-            <ArtCover art={art} className="h-44 sm:h-52" />
-          )}
+          <ArtworkGallery key={art.id} art={art} />
           <a
             href={art.url}
             target="_blank"

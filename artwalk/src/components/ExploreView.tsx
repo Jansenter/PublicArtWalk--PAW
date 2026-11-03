@@ -10,6 +10,8 @@ import type { NearbySelection } from '../lib/nearby';
 import ArtMap, { categoryColor } from './ArtMap';
 import Shell, { BackIcon, IconButton, LocateIcon } from './Shell';
 import StoryPanel from './StoryPanel';
+import ArtCover from './ArtCover';
+import { photosFor } from '../lib/artwork-photos';
 
 export default function ExploreView({ artId }: { artId?: number }) {
   const [areaName, setAreaName] = useState('');
@@ -37,6 +39,8 @@ export default function ExploreView({ artId }: { artId?: number }) {
     });
     return me ? [...list].sort((a, b) => distance(me, a) - distance(me, b)) : [...list].sort((a, b) => a.title.localeCompare(b.title));
   }, [query, cats, tags, me, areaWorks]);
+
+  const photoHighlights = filtered.filter((art) => photosFor(art).length > 0).slice(0, 4);
 
   const open = artId ? artworkById(artId) : undefined;
   const ctx = open ? stopFor(open.id) : undefined;
@@ -145,6 +149,20 @@ export default function ExploreView({ artId }: { artId?: number }) {
   );
 
   const panel = (
+    <div>
+      {photoHighlights.length > 0 && (
+        <section className="border-b border-line p-4" aria-labelledby="explore-photo-title">
+          <h2 id="explore-photo-title" className="mb-3 text-sm font-semibold">A few to discover</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {photoHighlights.map((art) => (
+              <button key={art.id} onClick={() => go(art.id)} className="min-w-0 overflow-hidden rounded-2xl border border-line bg-card text-left transition hover:bg-paper-2">
+                <ArtCover art={art} compact className="h-28 w-full" />
+                <span className="block px-3 py-2 text-sm font-semibold leading-snug">{art.title}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     <ul className="divide-y divide-line px-2 pb-10">
       <li className="px-2 py-2 text-xs text-ink-3">
         {filtered.length} {filtered.length === 1 ? 'artwork' : 'artworks'}{me ? ' · nearest first' : ''}
@@ -154,7 +172,7 @@ export default function ExploreView({ artId }: { artId?: number }) {
         return (
           <li key={a.id}>
             <button onClick={() => go(a.id)} className="flex w-full items-start gap-3 rounded-xl px-2 py-3 text-left transition hover:bg-paper-2">
-              <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: categoryColor(a.type) }} aria-hidden />
+              {photosFor(a).length > 0 ? <ArtCover art={a} compact className="h-16 w-16 shrink-0 rounded-xl" /> : <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: categoryColor(a.type) }} aria-hidden />}
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold leading-snug">{a.title}</span>
                 <span className="block truncate text-sm text-ink-3">
@@ -170,6 +188,7 @@ export default function ExploreView({ artId }: { artId?: number }) {
       })}
       {!filtered.length && <li className="px-2 py-10 text-center text-ink-3">No artworks match. Try another word or clear the filters.</li>}
     </ul>
+    </div>
   );
 
   const map = (
@@ -188,7 +207,7 @@ export default function ExploreView({ artId }: { artId?: number }) {
         onSelect={(id) => go(id)}
         me={me}
       />
-      <div className="absolute right-3 top-3 z-[500]">
+      <div className="absolute right-3 top-16 z-[500]">
         <IconButton label={locate ? 'Stop showing my location' : 'Show my location'} onClick={() => { setLocate((v) => !v); setFindArea(false); }}>
           <LocateIcon on={locate && !!me} />
         </IconButton>

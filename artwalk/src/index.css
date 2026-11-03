@@ -312,24 +312,19 @@ body {
 }
 .home-story-paws {
   display: inline-flex;
-  gap: 0.1em;
-  margin-left: 0.2em;
+  gap: 0.12em;
+  margin-left: 0.12em;
   vertical-align: middle;
-  color: #fff;
+  color: currentColor;
 }
 .home-story-paws svg {
   width: 0.48em;
   height: 0.48em;
   opacity: 0;
 }
-.home-story-paws.is-visible svg {
-  opacity: 1;
-}
-.home-story-paws svg:first-child { rotate: -18deg; }
-.home-story-paws svg:last-child {
-  rotate: 18deg;
-  translate: 0 -0.12em;
-}
+.home-story-paws.is-visible svg { opacity: 1; }
+.home-story-paws svg:first-child { rotate: -18deg; translate: 0 0.12em; }
+.home-story-paws svg:last-child { rotate: 18deg; translate: 0 -0.12em; }
 
 @keyframes home-cta-fade {
   from {

@@ -8,7 +8,7 @@ import ArtCover from './ArtCover';
 import ArtMap from './ArtMap';
 import CommunityHub from './CommunityHub';
 import { useLanguage } from '../lib/language';
-import { LanguageButton } from './Shell';
+import { LanguageButton, ProfileButton } from './Shell';
 import { speechSupported, toChunks, useNarration } from '../lib/speech';
 import { useTranslatedTexts } from '../lib/language';
 import Challenge from './Challenge';
@@ -69,6 +69,7 @@ export default function Home() {
     const headline = headlineRef.current;
     if (!headline) return;
     setOrbitComplete(false);
+    if (orbitReplay === 0 && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setOrbitComplete(true); return; }
     let frame = 0;
     let disposed = false;
     const layer = document.createElement('div');
@@ -76,14 +77,17 @@ export default function Home() {
     layer.setAttribute('aria-hidden', 'true');
     document.body.appendChild(layer);
     const words = Array.from(headline.querySelectorAll<HTMLElement>('[data-orbit-word]'));
+    const originalPaws = Array.from(headline.querySelectorAll<SVGSVGElement>('.home-story-paws svg'));
     const reset = () => {
       layer.replaceChildren();
       words.forEach((word) => { word.style.visibility = ''; });
+      originalPaws.forEach((paw) => { paw.style.visibility = ''; });
     };
     const timer = window.setTimeout(async () => {
       await document.fonts.ready;
       if (disposed) return;
-      const radius = Math.max(80, Math.min(window.innerWidth, window.innerHeight) * 0.36);
+      const viewportSize = Math.min(window.innerWidth, window.innerHeight);
+      const radius = Math.max(60, viewportSize * 0.43);
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       // Measure each letter at rest, then place it on a shared circular baseline.
@@ -100,7 +104,15 @@ export default function Home() {
             textAlign: 'center', transformOrigin: 'center',
           });
           layer.appendChild(clone);
-          return { clone, bounds, wordIndex, width: bounds.width };
+          const fontSize = parseFloat(style.fontSize);
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d')!;
+          context.font = style.font;
+          const metrics = context.measureText(letter.textContent ?? '');
+          const baseline = (bounds.height - metrics.fontBoundingBoxAscent - metrics.fontBoundingBoxDescent) / 2 + metrics.fontBoundingBoxAscent;
+          const dotX = metrics.actualBoundingBoxRight - fontSize * 0.06 - bounds.width / 2;
+          const dotTop = baseline - metrics.actualBoundingBoxAscent - bounds.height / 2;
+          return { clone, bounds, wordIndex, width: bounds.width, dotX, dotTop, dot: word.dataset.orbitWord === 'find' && letter.textContent === 'i' ? 0 : word.dataset.orbitWord === 'it' && letter.textContent === 'i' ? 1 : -1 };
         });
       });
       // Reveal the paws in sequence on a separate orbit around the words.
@@ -114,12 +126,15 @@ export default function Home() {
           opacity: '0', transformOrigin: 'center',
         });
         layer.appendChild(clone);
-        return { clone, bounds, wordIndex: words.length + index * 3, width: bounds.width, paw: true };
+        return { clone, bounds, wordIndex: words.length + index * 3, width: bounds.width, dotX: 0, dotTop: 0, dot: -1, paw: true };
       });
       const orbitItems = [...letters.map((letter) => ({ ...letter, paw: false })), ...paws];
       const totalWidth = letters.reduce((sum, letter) => sum + letter.width, 0);
       const gap = totalWidth * 0.045;
-      const scale = Math.min(1.65, Math.PI * 2 * radius / (totalWidth + gap * words.length));
+      const scale = 0.72 * Math.PI * 2 * radius / (totalWidth + gap * words.length);
+      // Keep oversized glyphs near the edges without clipping the circle.
+      const tallest = Math.max(...letters.map((letter) => letter.bounds.height)) * scale;
+      const orbitRadius = Math.max(40, viewportSize / 2 - tallest / 2 - 8);
       const circumference = totalWidth + gap * words.length;
       let distance = 0;
       let previousWord = 0;
@@ -133,8 +148,10 @@ export default function Home() {
           ? pawAngles[pawIndex] + (Math.random() - 0.5) * 0.22
           : -Math.PI / 2 + (distance + letter.width / 2) / circumference * Math.PI * 2;
         distance += letter.width;
-        return { ...letter, angle, radialOffset: letter.paw ? [48, -42][pawIndex] + Math.random() * 12 : 0 };
+        return { ...letter, angle, radialOffset: letter.paw ? [30, -30][pawIndex] : 0 };
       });
+      const dotLetters = positioned.filter((item) => !item.paw && item.dot >= 0);
+      const dotPoses = new Map<number, { x: number; y: number; tilt: number; scale: number }>();
       const started = performance.now();
       const stagger = 320;
       const entrance = 2600;
@@ -149,24 +166,50 @@ export default function Home() {
         const elapsed = now - started;
         const rotation = -ease(clamp((elapsed - assembledAt) / orbitDuration)) * Math.PI * 2;
         words.forEach((word) => { word.style.visibility = 'hidden'; });
-        positioned.forEach(({ clone, bounds, wordIndex, angle, paw, radialOffset }) => {
+        originalPaws.forEach((paw) => { paw.style.visibility = 'hidden'; });
+        positioned.forEach((item) => {
+          const { clone, bounds, wordIndex, angle, paw, radialOffset } = item;
           const arrival = ease(clamp((elapsed - wordIndex * stagger) / entrance));
           const departure = ease(clamp((elapsed - returnAt - wordIndex * stagger) / entrance));
           const blend = arrival * (1 - departure);
           clone.style.opacity = String(paw
             ? ease(clamp((elapsed - wordIndex * stagger) / 900))
             : 1 - 0.45 * blend);
-          const orbitRadius = paw
-            ? Math.min(radius + radialOffset, Math.min(window.innerWidth, window.innerHeight) / 2 - 24)
-            : radius;
+          const itemRadius = paw
+            ? Math.min(orbitRadius + radialOffset, viewportSize / 2 - bounds.height * scale / 2 - 8)
+            : orbitRadius;
           const theta = angle + rotation;
           const originX = bounds.left + bounds.width / 2;
           const originY = bounds.top + bounds.height / 2;
-          const x = originX + (centerX + Math.cos(theta) * orbitRadius - originX) * blend;
-          const y = originY + (centerY + Math.sin(theta) * orbitRadius - originY) * blend;
+          let x = originX + (centerX + Math.cos(theta) * itemRadius - originX) * blend;
+          let y = originY + (centerY + Math.sin(theta) * itemRadius - originY) * blend;
           // Keep the completed revolution constant during the return to avoid an extra spin.
-          const tilt = (angle + Math.PI / 2) * blend + rotation;
-          clone.style.transform = `translate(${x - bounds.width / 2}px, ${y - bounds.height / 2}px) rotate(${tilt}rad) scale(${1 + (scale - 1) * blend})`;
+          let tilt = (angle + Math.PI / 2) * blend + rotation;
+          let itemScale = 1 + (scale - 1) * blend;
+          if (!paw && item.dot >= 0) {
+            dotPoses.set(item.dot, { x, y, tilt, scale: itemScale });
+            const pawArrival = clamp((elapsed - (words.length + item.dot * 3) * stagger) / 900);
+            // Hide only the cloned i dot while its paw replaces it; restore it on return.
+            clone.textContent = pawArrival > 0.5 && elapsed < returnAt ? 'ı' : 'i';
+          }
+          if (paw) {
+            const dotIndex = (wordIndex - words.length) / 3;
+            const letter = dotLetters.find((letter) => letter.dot === dotIndex);
+            const pose = dotPoses.get(dotIndex);
+            if (letter && pose) {
+              // Use the i's live transform and measured glyph top, so alignment
+              // holds throughout the revolution instead of drifting on another orbit.
+              const localX = (letter.dotX - letter.bounds.height * 0.035) * pose.scale;
+              const localY = (letter.dotTop + letter.bounds.height * 0.025) * pose.scale;
+              const attachedX = pose.x + Math.cos(pose.tilt) * localX - Math.sin(pose.tilt) * localY;
+              const attachedY = pose.y + Math.sin(pose.tilt) * localX + Math.cos(pose.tilt) * localY;
+              x = attachedX + (originX - attachedX) * departure;
+              y = attachedY + (originY - attachedY) * departure;
+              tilt = pose.tilt * (1 - departure) + rotation * departure;
+              itemScale = pose.scale * 0.66 + (1 - pose.scale * 0.66) * departure;
+            }
+          }
+          clone.style.transform = `translate(${x - bounds.width / 2}px, ${y - bounds.height / 2}px) rotate(${tilt}rad) scale(${itemScale})`;
         });
         if (elapsed < finishAt) frame = window.requestAnimationFrame(tick);
         else { reset(); setOrbitComplete(true); }
@@ -182,7 +225,7 @@ export default function Home() {
     };
   }, [orbitReplay, language]);
   const renderWords = (text: string) => text.split(/\s+/).map((word, index) => (
-    <span key={`${word}-${index}`}><span data-orbit-word className="inline-block">{Array.from(word).map((letter, letterIndex) => <span key={letterIndex} data-orbit-letter>{letter}</span>)}</span>{' '}</span>
+    <span key={`${word}-${index}`}><span data-orbit-word={word} className="inline-block">{Array.from(word).map((letter, letterIndex) => <span key={letterIndex} data-orbit-letter>{letter}</span>)}</span>{' '}</span>
   ));
   const totalVisited = ARTWORKS.filter((a) => visited.includes(a.id)).length;
   const previewTour = TOURS[0];
@@ -204,8 +247,9 @@ export default function Home() {
             <span className="font-display text-base font-semibold leading-tight tracking-tight sm:text-xl">Public ArtWalk - Paw</span>
           </a>
           <div className="flex items-center gap-2">
-            <span className="location-badge rounded-full border px-3 py-1.5 text-xs font-semibold">📍 Downtown Vancouver</span>
+            <span className="location-badge hidden lg:block rounded-full border px-3 py-1.5 text-xs font-semibold">📍 Downtown Vancouver</span>
             <LanguageButton />
+            <ProfileButton />
           </div>
         </nav>
 
@@ -223,8 +267,8 @@ export default function Home() {
 
         <header className="rise pb-8 pt-10 text-center sm:pt-14">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-vermilion">{t('Your personal city art storyteller')}</p>
-          <h1 ref={headlineRef} className="home-story-orbit mx-auto max-w-3xl font-display text-[44px] font-semibold leading-[1.02] tracking-tight sm:text-[68px]">
-            {renderWords(t('Every corner has a story.'))} <span className="inline-block italic text-ink-2">{renderWords(t('Go find it'))}<span className={`home-story-paws ${orbitComplete ? 'is-visible' : ''}`} aria-hidden="true">{[0, 1].map((paw) => <svg key={paw} viewBox="0 0 64 64" fill="currentColor"><ellipse cx="15" cy="26" rx="6" ry="8" transform="rotate(-25 15 26)" /><ellipse cx="26" cy="17" rx="6" ry="8" transform="rotate(-10 26 17)" /><ellipse cx="39" cy="17" rx="6" ry="8" transform="rotate(10 39 17)" /><ellipse cx="50" cy="26" rx="6" ry="8" transform="rotate(25 50 26)" /><path d="M32 30c-6 0-9 6-13 11-4 5-3 12 3 13 4 1 7-2 10-2s6 3 10 2c6-1 7-8 3-13-4-5-7-11-13-11Z" /></svg>)}</span></span>
+          <h1 ref={headlineRef} className="home-story-orbit mx-auto max-w-3xl font-display text-[36px] font-semibold leading-[1.02] tracking-tight sm:text-[56px]">
+            {renderWords(t('Every corner has a story.'))} <span className="inline-block italic text-ink-2">{renderWords(t('Go find it'))}<span className={`home-story-paws ${orbitComplete ? 'is-visible' : ''}`} aria-hidden="true">{[0, 1].map((paw) => <svg key={paw} viewBox="0 0 64 64" fill="currentColor"><ellipse cx="15" cy="26" rx="6" ry="8" transform="rotate(-25 15 26)" /><ellipse cx="26" cy="17" rx="6" ry="8" /><ellipse cx="39" cy="17" rx="6" ry="8" /><ellipse cx="50" cy="26" rx="6" ry="8" transform="rotate(25 50 26)" /><path d="M32 30c-6 0-9 6-13 11-4 5-3 12 3 13 4 1 7-2 10-2s6 3 10 2c6-1 7-8 3-13-4-5-7-11-13-11Z" /></svg>)}</span></span>
           </h1>
           <button type="button" onClick={() => setOrbitReplay((value) => value + 1)} className="mx-auto mt-4 rounded-full border border-white/50 px-4 py-2 text-sm text-white hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
             {language === 'zh' ? '↻ 重播动画' : language === 'fr' ? '↻ Rejouer' : '↻ Replay animation'}

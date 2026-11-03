@@ -4,6 +4,7 @@ import cityRaw from '../data/city-artworks.json';
 import { TOURS, type Tour, type TourStop } from '../data/tours';
 
 export interface Artwork {
+  photos?: import('./artwork-photos').ArtworkPhoto[];
   id: number;
   title: string;
   type: string;

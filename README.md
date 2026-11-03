@@ -2,19 +2,15 @@
 
 NEXT:
 
+Profile and artwork display:
 
-1. Improve the profile functions. After an user build their profile, they should be able to see their profile and login icon on top right. 
-
-
-2. The artwork display function on the map needs to be updated -- resize the window based on the size of the image. Allow scroll to display multiple photos
-
-
-3. find a way to legally obtain images of all artworks... can we get them from google map? will that be open sourced images that anyone can use? 
-
+1. [x] Show a top-right profile icon after profile creation. The icon displays the initial and name and opens My ArtWalk. Profiles are local to this browser; account authentication remains future work.
+2. [x] Display artwork photos at their natural proportions, capped to the viewport, and allow horizontal scrolling through multiple photos. The existing collection still has one photo per mapped artwork; additional photos can be supplied in an artwork's `photos` array.
+3. [ ] Obtain legally reusable images for the full collection. Research and integration guidance are in [docs/artwork-images.md](docs/artwork-images.md). Google results and Maps photos are not automatically reusable. City photo permissions still need confirmation; no new city images were downloaded.
 
 Frontend:
 
-1. circling animation. Make the fonts growing even bigger, touching the edges of the page. , and the paws appear as the dots in the letter of find and it.
+1. [x] Preserve the circling animation and enlarge it toward the viewport edges. During the orbit, the paws follow the dots in “find” and “it”; after the animation, they return to the end of the unchanged words. Reduced motion disables autoplay; Replay still works.
 
 #####
 
