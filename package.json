@@ -1,0 +1,16 @@
+{
+  "name": "artwalk-project",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm --prefix artwalk install",
+    "dev": "npm --prefix artwalk run dev",
+    "build": "npm --prefix artwalk run build",
+    "start": "npm --prefix artwalk start",
+    "preview": "npm --prefix artwalk run preview",
+    "data": "npm --prefix artwalk run data",
+    "typecheck": "npm --prefix artwalk run typecheck",
+    "test:nearby": "npm --prefix artwalk run test:nearby",
+    "test:profile": "npm --prefix artwalk run test:profile"
+  }
+}

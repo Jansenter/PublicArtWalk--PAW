@@ -1,4 +1,24 @@
 # Paw 🎨
+
+NEXT:
+
+Backend (do those count as backend?)
+
+1. Improve the profile functions. After an user build their profile, they should be able to see their profile and login icon on top right. 
+
+
+2. The artwork display function on the map needs to be updated -- resize the window based on the size of the image. Allow scroll to display multiple photos
+
+
+3. find a way to legally obtain images of all artworks... can we get them from google map? will that be open sourced images that anyone can use? 
+
+
+Frontend:
+
+1. circling animation. Make the fonts growing even bigger, touching the edges of the page. , and the paws appear as the dots in the letter of find and it.
+
+#####
+
 ### Discover the stories hidden in your city.
 
 Paw is an interactive public art discovery platform that transforms ordinary walks into meaningful cultural experiences. Explore public art around your city, follow curated walking tours based on your interests, and uncover the stories behind each artwork through accessible text and audio descriptions.
@@ -107,7 +127,7 @@ Our intended impact includes:
 2. Navigate to the project directory:
 
    ```bash
-   cd paw
+   cd BCS_HACKTHON_2026Oct17
    ```
 
 3. Install dependencies:
@@ -124,7 +144,7 @@ Our intended impact includes:
 
 5. Open the local URL displayed in your terminal.
 
-*Note: Update these instructions if the project uses a different package manager, framework, or startup command.*
+Run these commands from the repository root. `npm install` also installs the app dependencies in `artwalk/`. Node.js only needs to be installed once; rerun `npm install` when setting up a new checkout or when dependencies change.
 
 ## 🧭 Example User Journey
 
