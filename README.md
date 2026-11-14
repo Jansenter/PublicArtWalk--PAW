@@ -2,7 +2,6 @@
 
 NEXT:
 
-Backend (do those count as backend?)
 
 1. Improve the profile functions. After an user build their profile, they should be able to see their profile and login icon on top right. 
 
