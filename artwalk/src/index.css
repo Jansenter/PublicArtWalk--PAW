@@ -5,7 +5,7 @@
   --font-display: 'Fraunces', ui-serif, Georgia, serif;
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 
-  --color-paper: #f4efe6;
+  --color-paper: #f5f5f5;
   --color-paper-2: #ebe4d6;
   --color-card: #fffdf8;
   --color-ink: #1c1a17;
@@ -35,7 +35,7 @@ body {
 
 /* Subtle paper grain so the background isn't flat */
 .grain {
-  background: #f1ece0;
+  background: #f5f5f5;
 }
 
 .wander-link {
