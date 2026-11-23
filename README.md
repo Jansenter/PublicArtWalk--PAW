@@ -103,6 +103,11 @@ Our intended impact includes:
 - **Backend:** Node.js and Express, if a backend is needed
 - **Data Storage:** JSON for the initial prototype; a database for future expansion
 
+## Data Sources
+
+- City of Vancouver, [Local area boundary](https://opendata.vancouver.ca/explore/dataset/local-area-boundary/information/?disjunctive.name&location=11,49.26825,-123.02525) (last modified June 24, 2023).
+- City of Vancouver, [Public art](https://opendata.vancouver.ca/explore/dataset/public-art/information/) (last modified August 14, 2023).
+
 ## 🚀 Getting Started
 
 ### Prerequisites
